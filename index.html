@@ -31,15 +31,22 @@ button{font:inherit;cursor:pointer}
 .ghost{background:transparent;color:var(--dim);border:1px solid var(--key-edge);border-radius:8px;padding:4px 10px}
 .ghost:focus-visible,.choice:focus-visible,.go:focus-visible{outline:3px solid var(--bubble);outline-offset:2px}
 .field{position:relative;border-radius:14px;overflow:hidden;background:linear-gradient(var(--sky-top),var(--sky-bot));min-height:240px}
-.field::after{content:"";position:absolute;inset:auto 0 0;height:18px;background:repeating-linear-gradient(90deg,#3d8a5a 0 14px,#4ea06a 14px 28px)}
+.field::after{content:"";position:absolute;inset:auto 0 0;height:18px;background:var(--ground)}
+/* 主題：只換色票與符號，玩法不變 */
+:root{--ground:repeating-linear-gradient(90deg,#3d8a5a 0 14px,#4ea06a 14px 28px);--bubble-hi:#fff6c2;--glow:rgba(255,216,74,.45);--veil:rgba(13,22,64,.82);--star:#ffffff;--bubble-edge:transparent}
+body[data-skin="candy"]{--sky-top:#241a52;--sky-bot:#4a2a6e;--ink:#fbe6f4;--dim:#d2b6dd;--bubble:#ff9fd2;--bubble-hi:#ffe0f0;--bubble-ink:#3b1a55;--hit:#7ff0c8;--miss:#ffb36b;--key:#33235e;--key-edge:#6a4a96;--glow:rgba(255,159,210,.5);--veil:rgba(36,26,82,.85);--ground:repeating-linear-gradient(90deg,#4e8a62 0 12px,#ffb3da 12px 16px,#4e8a62 16px 28px)}
+body[data-skin="unicorn"]{--sky-top:#e4d8fa;--sky-bot:#c8b6f0;--ink:#3c2a6e;--dim:#6e5c9a;--bubble:#ffb3d1;--bubble-ink:#2c1f4a;--hit:#2fae7e;--miss:#d4537e;--key:#f4eefe;--key-edge:#b5a3f0;--glow:rgba(124,92,200,.25);--veil:rgba(228,216,250,.9);--star:#ffffff;--ground:repeating-linear-gradient(90deg,#ffb3d1 0 20px,#ffe27a 20px 40px,#9ed3f5 40px 60px,#b5a3f0 60px 80px)}
+body[data-skin="sakura"]{--sky-top:#f8cfc0;--sky-bot:#d9b2d6;--ink:#6a2e3e;--dim:#94566a;--bubble:#ffffff;--bubble-hi:#ffffff;--bubble-ink:#8a2e4c;--bubble-edge:#f28cb0;--hit:#2fae7e;--miss:#c2345e;--key:#fff3f0;--key-edge:#e8a7bb;--glow:rgba(242,140,176,.35);--veil:rgba(248,207,192,.9);--star:#ffffff;--ground:#7fb069}
+body[data-skin="unicorn"] .go,body[data-skin="sakura"] .go{background:var(--miss);color:#fff}
+body[data-skin="unicorn"] .choice[aria-pressed="true"],body[data-skin="sakura"] .choice[aria-pressed="true"],body[data-skin="unicorn"] .card h1,body[data-skin="sakura"] .card h1{border-color:var(--miss);color:var(--miss)}
 #stars{position:absolute;inset:0;width:100%;height:100%}
-.drop{position:absolute;top:0;left:0;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#fff6c2,var(--bubble) 60%);color:var(--bubble-ink);font-family:var(--display);font-weight:800;font-size:2rem;box-shadow:0 0 18px rgba(255,216,74,.45);will-change:transform}
+.drop{position:absolute;top:0;left:0;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,var(--bubble-hi),var(--bubble) 60%);border:3px solid var(--bubble-edge);box-sizing:border-box;color:var(--bubble-ink);font-family:var(--display);font-weight:800;font-size:2rem;box-shadow:0 0 18px var(--glow);will-change:transform}
 .drop.target{box-shadow:0 0 0 4px var(--hit),0 0 22px rgba(94,240,176,.6)}
 .pop{position:absolute;font-family:var(--display);font-weight:800;pointer-events:none;animation:pop .6s ease-out forwards}
 @keyframes pop{to{transform:translateY(-40px) scale(1.4);opacity:0}}
 .shake{animation:shake .25s}
 @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(13,22,64,.82);z-index:5;padding:16px}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:var(--veil);z-index:5;padding:16px}
 .card{max-width:440px;width:100%;display:grid;gap:14px;text-align:center}
 .card h1{font-family:var(--display);font-size:2.6rem;margin:0;color:var(--bubble);text-wrap:balance}
 .card p{margin:0;color:var(--dim);line-height:1.6}
@@ -96,6 +103,14 @@ button{font:inherit;cursor:pointer}
             <button class="choice" type="button" data-v="1.4" aria-pressed="false">快手</button>
           </div>
         </div>
+        <div class="group"><label>主題</label>
+          <div class="choices" data-k="skin">
+            <button class="choice" type="button" data-v="star" aria-pressed="true">星空</button>
+            <button class="choice" type="button" data-v="candy" aria-pressed="false">棉花糖夜空</button>
+            <button class="choice" type="button" data-v="unicorn" aria-pressed="false">獨角獸彩虹</button>
+            <button class="choice" type="button" data-v="sakura" aria-pressed="false">櫻花傍晚</button>
+          </div>
+        </div>
         <button class="go" id="start" type="button">開始！</button>
         <p id="best"></p>
       </div>
@@ -139,7 +154,22 @@ const POOLS={
 };
 const $=id=>document.getElementById(id);
 const field=$("field"),kb=$("kb");
-const opts={mode:"en",speed:0.7};
+const opts={mode:"en",speed:0.7,skin:"star"};
+const SKINS={
+  star:{life:["★","☆"],pop:"★",title:"星空快打"},
+  candy:{life:["♥","♡"],pop:"♥",title:"棉花糖快打"},
+  unicorn:{life:["♥","♡"],pop:"★",title:"彩虹快打",colors:[["#ffb3d1","#4b1528"],["#b5a3f0","#26215c"],["#9ed3f5","#042c53"],["#ffe27a","#412402"]]},
+  sakura:{life:["♥","♡"],pop:"❀",title:"櫻花快打"}
+};
+let starColor="#fff";
+function applySkin(){
+  if(!SKINS[opts.skin])opts.skin="star";
+  document.body.dataset.skin=opts.skin;
+  document.querySelectorAll('[data-k="skin"] .choice').forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===opts.skin));
+  document.querySelector(".card h1").textContent=SKINS[opts.skin].title;
+  starColor=getComputedStyle(document.body).getPropertyValue("--star").trim()||"#fff";
+  const [on]=SKINS[opts.skin].life;if(!S)$("lives").textContent=on.repeat(5);
+}
 let S=null,raf=0,last=0,soundOn=true,actx=null;
 
 function label(c){return opts.mode==="zy"?ZY[c]:enLabel(c)}
@@ -169,6 +199,7 @@ document.querySelectorAll(".choices").forEach(g=>g.addEventListener("click",e=>{
   const b=e.target.closest(".choice");if(!b)return;
   g.querySelectorAll(".choice").forEach(x=>x.setAttribute("aria-pressed",x===b));
   opts[g.dataset.k]=g.dataset.k==="speed"?+b.dataset.v:b.dataset.v;
+  if(g.dataset.k==="skin"){store("skin",opts.skin);applySkin()}
   buildKb();showBest();
 }));
 
@@ -188,7 +219,7 @@ function start(){
 
 function hud(){
   $("score").textContent=S.score;$("level").textContent=S.level;$("combo").textContent=S.combo;
-  $("lives").textContent="★".repeat(S.lives)+"☆".repeat(5-S.lives);
+  const [on,off]=SKINS[opts.skin].life;$("lives").textContent=on.repeat(S.lives)+off.repeat(5-S.lives);
 }
 
 function spawn(){
@@ -196,6 +227,8 @@ function spawn(){
   const onScreen=new Set(S.drops.map(d=>d.code));
   let c,tries=0;do{c=pool[Math.random()*pool.length|0]}while(onScreen.has(c)&&++tries<10);
   const el=document.createElement("div");el.className="drop";el.textContent=label(c);
+  const cs=SKINS[opts.skin].colors;
+  if(cs){const [bg,fg]=cs[Math.random()*cs.length|0];el.style.background=bg;el.style.color=fg}
   const w=field.clientWidth;const x=8+Math.random()*Math.max(1,w-72);
   field.insertBefore(el,$("menu"));
   S.drops.push({code:c,el,x,y:-60,v:(38+S.level*7)*opts.speed*(0.85+Math.random()*0.3)});
@@ -242,7 +275,7 @@ function press(code){
     const d=matches[0];
     S.hits++;S.combo++;
     const gain=10+Math.min(S.combo,20);
-    S.score+=gain;popText(d.x+8,d.y,"+"+gain,"var(--hit)");remove(d);
+    S.score+=gain;popText(d.x+8,d.y,SKINS[opts.skin].pop+" +"+gain,"var(--hit)");remove(d);
     beep(520+Math.min(S.combo,12)*40);
     if(S.hits%12===0){S.level++;popText(field.clientWidth/2-50,field.clientHeight/2,"升級！","var(--bubble)")}
   }else{
@@ -295,10 +328,11 @@ const cv=$("stars"),cx=cv.getContext("2d");let stars=[];
 function sizeStars(){cv.width=field.clientWidth;cv.height=field.clientHeight;
   stars=Array.from({length:70},()=>({x:Math.random()*cv.width,y:Math.random()*cv.height*0.85,r:Math.random()*1.6+.3,p:Math.random()*6}))}
 function drawStars(t){cx.clearRect(0,0,cv.width,cv.height);
-  for(const s of stars){cx.globalAlpha=.4+.6*Math.abs(Math.sin(t/900+s.p));cx.fillStyle="#fff";cx.beginPath();cx.arc(s.x,s.y,s.r,0,7);cx.fill()}cx.globalAlpha=1}
+  for(const s of stars){cx.globalAlpha=.4+.6*Math.abs(Math.sin(t/900+s.p));cx.fillStyle=starColor;cx.beginPath();cx.arc(s.x,s.y,s.r,0,7);cx.fill()}cx.globalAlpha=1}
 new ResizeObserver(sizeStars).observe(field);
 
-buildKb();showBest();hud?.call&&($("lives").textContent="★★★★★");
+opts.skin=store("skin")||"star";applySkin();
+buildKb();showBest();
 raf=requestAnimationFrame(function idle(t){if(!S){drawStars(t);raf=requestAnimationFrame(idle)}});
 </script>
 
