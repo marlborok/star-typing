@@ -69,6 +69,7 @@ button{font:inherit;cursor:pointer}
     <div class="stat"><span>連擊</span><b id="combo">0</b></div>
     <div class="stat"><span>生命</span><span class="lives" id="lives"></span></div>
     <div class="sp"></div>
+    <button class="ghost" id="home" type="button">回首頁</button>
     <button class="ghost" id="pause" type="button">暫停</button>
     <button class="ghost" id="sound" type="button">音效：開</button>
   </div>
@@ -108,7 +109,7 @@ button{font:inherit;cursor:pointer}
       </div>
     </div>
     <div class="overlay" id="paused" hidden>
-      <div class="card"><h1>暫停中</h1><button class="go" id="resume" type="button">繼續</button></div>
+      <div class="card"><h1>暫停中</h1><button class="go" id="resume" type="button">繼續</button><button class="ghost" id="pauseHome" type="button">回首頁</button></div>
     </div>
   </div>
 
@@ -276,7 +277,12 @@ window.addEventListener("blur",()=>setPause(true));
 $("start").onclick=start;$("again").onclick=start;
 $("resume").onclick=()=>setPause(false);
 $("pause").onclick=()=>setPause(!S?.paused);
-$("toMenu").onclick=()=>{$("over").hidden=true;$("menu").hidden=false;showBest()};
+function toMenu(){
+  if(S){S.running=false;for(const d of S.drops)d.el.remove();S.drops=[]}
+  kb.querySelectorAll(".hint").forEach(k=>k.classList.remove("hint"));
+  $("over").hidden=true;$("paused").hidden=true;$("menu").hidden=false;showBest();$("start").focus();
+}
+$("toMenu").onclick=toMenu;$("home").onclick=toMenu;$("pauseHome").onclick=toMenu;
 $("sound").onclick=()=>{soundOn=!soundOn;$("sound").textContent="音效："+(soundOn?"開":"關")};
 
 // 背景星星
