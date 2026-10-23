@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>星空快打</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Noto+Sans+TC:wght@500;800&display=swap">
+<style>
+/* 一個畫面：上方計分、中間星空掉字、下方鍵盤提示。刻意只做夜空一種風格。 */
+:root{
+  --sky-top:#0d1640; --sky-bot:#2a1f5c; --ink:#f4f1ff; --dim:#a9a3d6;
+  --bubble:#ffd84a; --bubble-ink:#2a1f5c; --hit:#5ef0b0; --miss:#ff7a8a; --key:#1c2357; --key-edge:#3a4290;
+  --display:"Baloo 2","Noto Sans TC",system-ui,sans-serif;
+  --body:"Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--sky-top);color:var(--ink);font-family:var(--body);overflow:hidden}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;gap:10px;box-sizing:border-box;max-width:960px;margin:0 auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-variant-numeric:tabular-nums}
+.stat{display:flex;gap:6px;align-items:baseline}
+.stat b{font-family:var(--display);font-size:1.6rem;line-height:1}
+.stat span{color:var(--dim);font-size:.85rem}
+.lives{letter-spacing:2px;font-size:1.2rem}
+.bar .sp{flex:1}
+button{font:inherit;cursor:pointer}
+.ghost{background:transparent;color:var(--dim);border:1px solid var(--key-edge);border-radius:8px;padding:4px 10px}
+.ghost:focus-visible,.choice:focus-visible,.go:focus-visible{outline:3px solid var(--bubble);outline-offset:2px}
+.field{position:relative;border-radius:14px;overflow:hidden;background:linear-gradient(var(--sky-top),var(--sky-bot));min-height:240px}
+.field::after{content:"";position:absolute;inset:auto 0 0;height:18px;background:repeating-linear-gradient(90deg,#3d8a5a 0 14px,#4ea06a 14px 28px)}
+#stars{position:absolute;inset:0;width:100%;height:100%}
+.drop{position:absolute;top:0;left:0;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#fff6c2,var(--bubble) 60%);color:var(--bubble-ink);font-family:var(--display);font-weight:800;font-size:2rem;box-shadow:0 0 18px rgba(255,216,74,.45);will-change:transform}
+.drop.target{box-shadow:0 0 0 4px var(--hit),0 0 22px rgba(94,240,176,.6)}
+.pop{position:absolute;font-family:var(--display);font-weight:800;pointer-events:none;animation:pop .6s ease-out forwards}
+@keyframes pop{to{transform:translateY(-40px) scale(1.4);opacity:0}}
+.shake{animation:shake .25s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(13,22,64,.82);z-index:5;padding:16px}
+.card{max-width:440px;width:100%;display:grid;gap:14px;text-align:center}
+.card h1{font-family:var(--display);font-size:2.6rem;margin:0;color:var(--bubble);text-wrap:balance}
+.card p{margin:0;color:var(--dim);line-height:1.6}
+.group{display:grid;gap:6px}
+.group label{font-size:.85rem;color:var(--dim);letter-spacing:.1em}
+.choices{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.choice{background:var(--key);color:var(--ink);border:2px solid var(--key-edge);border-radius:10px;padding:8px 14px;font-weight:800}
+.choice[aria-pressed="true"]{border-color:var(--bubble);color:var(--bubble)}
+.go{background:var(--bubble);color:var(--bubble-ink);border:0;border-radius:12px;padding:12px;font-family:var(--display);font-weight:800;font-size:1.4rem}
+.big{font-family:var(--display);font-size:3rem;color:var(--ink);line-height:1}
+.kb{display:grid;gap:5px;user-select:none}
+.row{display:flex;gap:5px;justify-content:center}
+.k{flex:1;max-width:58px;min-width:0;aspect-ratio:1/1;background:var(--key);border:1px solid var(--key-edge);border-bottom-width:3px;border-radius:8px;color:var(--ink);display:grid;place-items:center;font-weight:800;font-size:clamp(.8rem,3.4vw,1.2rem);padding:0;touch-action:manipulation}
+.k.off{opacity:.25}
+.k.hint{background:var(--hit);color:var(--bubble-ink);border-color:var(--hit)}
+.k.home::after{content:"";display:block;width:10px;height:2px;background:currentColor;margin-top:-6px;opacity:.6}
+.k{grid-template-rows:1fr}
+.msg{font-size:.85rem;color:var(--miss);min-height:1.2em;text-align:center}
+@media (max-height:560px){.kb{display:none}}
+@media (prefers-reduced-motion:reduce){.pop,.shake{animation:none}}
+</style>
+
+<div class="app">
+  <div class="bar">
+    <div class="stat"><span>分數</span><b id="score">0</b></div>
+    <div class="stat"><span>關卡</span><b id="level">1</b></div>
+    <div class="stat"><span>連擊</span><b id="combo">0</b></div>
+    <div class="stat"><span>生命</span><span class="lives" id="lives"></span></div>
+    <div class="sp"></div>
+    <button class="ghost" id="pause" type="button">暫停</button>
+    <button class="ghost" id="sound" type="button">音效：開</button>
+  </div>
+
+  <div class="field" id="field">
+    <canvas id="stars"></canvas>
+    <div class="overlay" id="menu">
+      <div class="card">
+        <h1>星空快打</h1>
+        <p>星星泡泡從天上掉下來，在它落地前按下對應的鍵！</p>
+        <div class="group"><label>練習內容</label>
+          <div class="choices" data-k="mode">
+            <button class="choice" type="button" data-v="home" aria-pressed="false">基本列</button>
+            <button class="choice" type="button" data-v="en" aria-pressed="true">英文字母</button>
+            <button class="choice" type="button" data-v="zy" aria-pressed="false">注音符號</button>
+            <button class="choice" type="button" data-v="num" aria-pressed="false">數字</button>
+          </div>
+        </div>
+        <div class="group"><label>速度</label>
+          <div class="choices" data-k="speed">
+            <button class="choice" type="button" data-v="0.7" aria-pressed="true">慢慢來</button>
+            <button class="choice" type="button" data-v="1" aria-pressed="false">普通</button>
+            <button class="choice" type="button" data-v="1.4" aria-pressed="false">快手</button>
+          </div>
+        </div>
+        <button class="go" id="start" type="button">開始！</button>
+        <p id="best"></p>
+      </div>
+    </div>
+    <div class="overlay" id="over" hidden>
+      <div class="card">
+        <h1 id="overTitle">遊戲結束</h1>
+        <div class="big" id="finalScore">0</div>
+        <p id="finalStats"></p>
+        <button class="go" id="again" type="button">再玩一次</button>
+        <button class="ghost" id="toMenu" type="button">換練習內容</button>
+      </div>
+    </div>
+    <div class="overlay" id="paused" hidden>
+      <div class="card"><h1>暫停中</h1><button class="go" id="resume" type="button">繼續</button></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="msg" id="msg"></div>
+    <div class="kb" id="kb"></div>
+  </div>
+</div>
+
+<script>
+const ROWS=[
+  ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0","Minus"],
+  ["KeyQ","KeyW","KeyE","KeyR","KeyT","KeyY","KeyU","KeyI","KeyO","KeyP"],
+  ["KeyA","KeyS","KeyD","KeyF","KeyG","KeyH","KeyJ","KeyK","KeyL","Semicolon"],
+  ["KeyZ","KeyX","KeyC","KeyV","KeyB","KeyN","KeyM","Comma","Period","Slash"]
+];
+// 標準（大千）注音鍵盤，不含聲調鍵
+const ZY={Digit1:"ㄅ",KeyQ:"ㄆ",KeyA:"ㄇ",KeyZ:"ㄈ",Digit2:"ㄉ",KeyW:"ㄊ",KeyS:"ㄋ",KeyX:"ㄌ",KeyE:"ㄍ",KeyD:"ㄎ",KeyC:"ㄏ",KeyR:"ㄐ",KeyF:"ㄑ",KeyV:"ㄒ",Digit5:"ㄓ",KeyT:"ㄔ",KeyG:"ㄕ",KeyB:"ㄖ",KeyY:"ㄗ",KeyH:"ㄘ",KeyN:"ㄙ",KeyU:"ㄧ",KeyJ:"ㄨ",KeyM:"ㄩ",Digit8:"ㄚ",KeyI:"ㄛ",KeyK:"ㄜ",Comma:"ㄝ",Digit9:"ㄞ",KeyO:"ㄟ",KeyL:"ㄠ",Period:"ㄡ",Digit0:"ㄢ",KeyP:"ㄣ",Semicolon:"ㄤ",Slash:"ㄥ",Minus:"ㄦ"};
+const SYM={Minus:"-",Semicolon:";",Comma:",",Period:".",Slash:"/"};
+const enLabel=c=>c.startsWith("Key")?c.slice(3).toLowerCase():c.startsWith("Digit")?c.slice(5):SYM[c];
+const POOLS={
+  home:["KeyA","KeyS","KeyD","KeyF","KeyJ","KeyK","KeyL","KeyG","KeyH"],
+  en:ROWS.flat().filter(c=>c.startsWith("Key")),
+  zy:Object.keys(ZY),
+  num:ROWS[0].filter(c=>c.startsWith("Digit"))
+};
+const $=id=>document.getElementById(id);
+const field=$("field"),kb=$("kb");
+const opts={mode:"en",speed:0.7};
+let S=null,raf=0,last=0,soundOn=true,actx=null;
+
+function label(c){return opts.mode==="zy"?ZY[c]:enLabel(c)}
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+function bestKey(){return "best_"+opts.mode}
+function showBest(){const b=store(bestKey());$("best").textContent=b?"這個項目的最高分："+b:""}
+
+function buildKb(){
+  kb.innerHTML="";
+  const pool=new Set(POOLS[opts.mode]);
+  for(const row of ROWS){
+    const r=document.createElement("div");r.className="row";
+    for(const c of row){
+      const b=document.createElement("button");b.type="button";b.className="k";b.dataset.code=c;
+      b.textContent=label(c)||"";
+      if(!pool.has(c))b.classList.add("off");
+      if(c==="KeyF"||c==="KeyJ")b.classList.add("home");
+      b.tabIndex=-1;
+      b.addEventListener("pointerdown",e=>{e.preventDefault();press(c)});
+      r.appendChild(b);
+    }
+    kb.appendChild(r);
+  }
+}
+
+document.querySelectorAll(".choices").forEach(g=>g.addEventListener("click",e=>{
+  const b=e.target.closest(".choice");if(!b)return;
+  g.querySelectorAll(".choice").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  opts[g.dataset.k]=g.dataset.k==="speed"?+b.dataset.v:b.dataset.v;
+  buildKb();showBest();
+}));
+
+function beep(f,d=0.08){
+  if(!soundOn)return;
+  try{actx=actx||new AudioContext();const o=actx.createOscillator(),g=actx.createGain();
+    o.frequency.value=f;o.type="triangle";g.gain.setValueAtTime(.15,actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+d);o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+d)}catch(e){}
+}
+
+function start(){
+  for(const d of S?.drops||[])d.el.remove();
+  S={score:0,level:1,combo:0,lives:5,hits:0,keys:0,drops:[],spawnIn:0,running:true,paused:false};
+  $("menu").hidden=true;$("over").hidden=true;$("paused").hidden=true;
+  hud();last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+}
+
+function hud(){
+  $("score").textContent=S.score;$("level").textContent=S.level;$("combo").textContent=S.combo;
+  $("lives").textContent="★".repeat(S.lives)+"☆".repeat(5-S.lives);
+}
+
+function spawn(){
+  const pool=POOLS[opts.mode];
+  const onScreen=new Set(S.drops.map(d=>d.code));
+  let c,tries=0;do{c=pool[Math.random()*pool.length|0]}while(onScreen.has(c)&&++tries<10);
+  const el=document.createElement("div");el.className="drop";el.textContent=label(c);
+  const w=field.clientWidth;const x=8+Math.random()*Math.max(1,w-72);
+  field.insertBefore(el,$("menu"));
+  S.drops.push({code:c,el,x,y:-60,v:(38+S.level*7)*opts.speed*(0.85+Math.random()*0.3)});
+}
+
+function loop(t){
+  const dt=Math.min(0.05,(t-last)/1000);last=t;
+  if(S.running&&!S.paused){
+    S.spawnIn-=dt;
+    const maxDrops=Math.min(2+S.level,8);
+    if(S.spawnIn<=0&&S.drops.length<maxDrops){spawn();S.spawnIn=Math.max(0.55,2.2-S.level*0.15)/opts.speed}
+    const ground=field.clientHeight-74;
+    let low=null;
+    for(const d of [...S.drops]){
+      d.y+=d.v*dt;
+      if(d.y>ground){miss(d);continue}
+      d.el.style.transform=`translate(${d.x}px,${d.y}px)`;
+      if(!low||d.y>low.y)low=d;
+    }
+    S.drops.forEach(d=>d.el.classList.toggle("target",d===low));
+    kb.querySelectorAll(".hint").forEach(k=>k.classList.remove("hint"));
+    if(low)kb.querySelector(`[data-code="${low.code}"]`)?.classList.add("hint");
+  }
+  drawStars(t);
+  raf=requestAnimationFrame(loop);
+}
+
+function remove(d){S.drops.splice(S.drops.indexOf(d),1);d.el.remove()}
+function popText(x,y,text,color){
+  const p=document.createElement("div");p.className="pop";p.textContent=text;p.style.left=x+"px";p.style.top=y+"px";p.style.color=color;
+  field.appendChild(p);setTimeout(()=>p.remove(),650);
+}
+function miss(d){
+  popText(d.x+10,d.y,"落地了","var(--miss)");remove(d);
+  S.lives--;S.combo=0;beep(160,.2);hud();
+  if(S.lives<=0)gameOver();
+}
+
+function press(code){
+  if(!S||!S.running||S.paused)return;
+  S.keys++;
+  const matches=S.drops.filter(d=>d.code===code).sort((a,b)=>b.y-a.y);
+  if(matches.length){
+    const d=matches[0];
+    S.hits++;S.combo++;
+    const gain=10+Math.min(S.combo,20);
+    S.score+=gain;popText(d.x+8,d.y,"+"+gain,"var(--hit)");remove(d);
+    beep(520+Math.min(S.combo,12)*40);
+    if(S.hits%12===0){S.level++;popText(field.clientWidth/2-50,field.clientHeight/2,"升級！","var(--bubble)")}
+  }else{
+    S.combo=0;field.classList.remove("shake");void field.offsetWidth;field.classList.add("shake");beep(120);
+  }
+  hud();
+}
+
+function gameOver(){
+  S.running=false;
+  const acc=S.keys?Math.round(S.hits/S.keys*100):0;
+  const prev=+(store(bestKey())||0);const isBest=S.score>prev;
+  if(isBest)store(bestKey(),S.score);
+  $("overTitle").textContent=isBest&&S.score>0?"新紀錄！":"遊戲結束";
+  $("finalScore").textContent=S.score;
+  $("finalStats").textContent=`打中 ${S.hits} 個 · 正確率 ${acc}% · 到第 ${S.level} 關`;
+  $("over").hidden=false;$("again").focus();
+}
+
+function setPause(p){if(!S||!S.running)return;S.paused=p;$("paused").hidden=!p;if(!p)last=performance.now()}
+
+document.addEventListener("keydown",e=>{
+  if(e.repeat)return;
+  if(e.code==="Escape"){setPause(!S?.paused);return}
+  if(e.code==="Enter"&&(!S||!S.running)){if(!$("menu").hidden||!$("over").hidden){e.preventDefault();start()}return}
+  if(S&&S.running&&!S.paused){
+    // 用實體鍵位判斷，所以開著注音輸入法也能玩
+    if(ZY[e.code]||enLabel(e.code)){e.preventDefault();press(e.code)}
+    $("msg").textContent=e.key==="Process"?"小提示：切到英文輸入法，畫面不會跳出選字框":"";
+  }
+});
+window.addEventListener("blur",()=>setPause(true));
+$("start").onclick=start;$("again").onclick=start;
+$("resume").onclick=()=>setPause(false);
+$("pause").onclick=()=>setPause(!S?.paused);
+$("toMenu").onclick=()=>{$("over").hidden=true;$("menu").hidden=false;showBest()};
+$("sound").onclick=()=>{soundOn=!soundOn;$("sound").textContent="音效："+(soundOn?"開":"關")};
+
+// 背景星星
+const cv=$("stars"),cx=cv.getContext("2d");let stars=[];
+function sizeStars(){cv.width=field.clientWidth;cv.height=field.clientHeight;
+  stars=Array.from({length:70},()=>({x:Math.random()*cv.width,y:Math.random()*cv.height*0.85,r:Math.random()*1.6+.3,p:Math.random()*6}))}
+function drawStars(t){cx.clearRect(0,0,cv.width,cv.height);
+  for(const s of stars){cx.globalAlpha=.4+.6*Math.abs(Math.sin(t/900+s.p));cx.fillStyle="#fff";cx.beginPath();cx.arc(s.x,s.y,s.r,0,7);cx.fill()}cx.globalAlpha=1}
+new ResizeObserver(sizeStars).observe(field);
+
+buildKb();showBest();hud?.call&&($("lives").textContent="★★★★★");
+raf=requestAnimationFrame(function idle(t){if(!S){drawStars(t);raf=requestAnimationFrame(idle)}});
+</script>
+
+</body>
+</html>
