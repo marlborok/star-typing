@@ -69,6 +69,7 @@ button{font:inherit;cursor:pointer}
     <div class="stat"><span>連擊</span><b id="combo">0</b></div>
     <div class="stat"><span>生命</span><span class="lives" id="lives"></span></div>
     <div class="sp"></div>
+    <button class="ghost" id="kbToggle" type="button">顯示鍵盤</button>
     <button class="ghost" id="home" type="button">回首頁</button>
     <button class="ghost" id="pause" type="button">暫停</button>
     <button class="ghost" id="sound" type="button">音效：開</button>
@@ -115,7 +116,7 @@ button{font:inherit;cursor:pointer}
 
   <div>
     <div class="msg" id="msg"></div>
-    <div class="kb" id="kb"></div>
+    <div class="kb" id="kb" hidden></div>
   </div>
 </div>
 
@@ -282,6 +283,10 @@ function toMenu(){
   kb.querySelectorAll(".hint").forEach(k=>k.classList.remove("hint"));
   $("over").hidden=true;$("paused").hidden=true;$("menu").hidden=false;showBest();$("start").focus();
 }
+// 小鍵盤預設收起，記住上次的選擇
+function setKb(show){kb.hidden=!show;$("kbToggle").textContent=show?"收起鍵盤":"顯示鍵盤";store("kb",show?"1":"0")}
+$("kbToggle").onclick=()=>setKb(kb.hidden);
+setKb(store("kb")==="1");
 $("toMenu").onclick=toMenu;$("home").onclick=toMenu;$("pauseHome").onclick=toMenu;
 $("sound").onclick=()=>{soundOn=!soundOn;$("sound").textContent="音效："+(soundOn?"開":"關")};
 
