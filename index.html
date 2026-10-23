@@ -6,7 +6,7 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>星空快打</title>
+<title>棉花糖快打</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Noto+Sans+TC:wght@500;800&display=swap">
 <style>
@@ -105,8 +105,8 @@ body[data-skin="unicorn"] .choice[aria-pressed="true"],body[data-skin="sakura"] 
         </div>
         <div class="group"><label>主題</label>
           <div class="choices" data-k="skin">
-            <button class="choice" type="button" data-v="star" aria-pressed="true">星空</button>
-            <button class="choice" type="button" data-v="candy" aria-pressed="false">棉花糖夜空</button>
+            <button class="choice" type="button" data-v="star" aria-pressed="false">星空</button>
+            <button class="choice" type="button" data-v="candy" aria-pressed="true">棉花糖夜空</button>
             <button class="choice" type="button" data-v="unicorn" aria-pressed="false">獨角獸彩虹</button>
             <button class="choice" type="button" data-v="sakura" aria-pressed="false">櫻花傍晚</button>
           </div>
@@ -154,7 +154,7 @@ const POOLS={
 };
 const $=id=>document.getElementById(id);
 const field=$("field"),kb=$("kb");
-const opts={mode:"en",speed:0.7,skin:"star"};
+const opts={mode:"en",speed:0.7,skin:"candy"};
 const SKINS={
   star:{life:["★","☆"],pop:"★",title:"星空快打"},
   candy:{life:["♥","♡"],pop:"♥",title:"棉花糖快打"},
@@ -163,7 +163,7 @@ const SKINS={
 };
 let starColor="#fff";
 function applySkin(){
-  if(!SKINS[opts.skin])opts.skin="star";
+  if(!SKINS[opts.skin])opts.skin="candy";
   document.body.dataset.skin=opts.skin;
   document.querySelectorAll('[data-k="skin"] .choice').forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===opts.skin));
   document.querySelector(".card h1").textContent=SKINS[opts.skin].title;
@@ -331,7 +331,7 @@ function drawStars(t){cx.clearRect(0,0,cv.width,cv.height);
   for(const s of stars){cx.globalAlpha=.4+.6*Math.abs(Math.sin(t/900+s.p));cx.fillStyle=starColor;cx.beginPath();cx.arc(s.x,s.y,s.r,0,7);cx.fill()}cx.globalAlpha=1}
 new ResizeObserver(sizeStars).observe(field);
 
-opts.skin=store("skin")||"star";applySkin();
+opts.skin=store("skin")||"candy";applySkin();
 buildKb();showBest();
 raf=requestAnimationFrame(function idle(t){if(!S){drawStars(t);raf=requestAnimationFrame(idle)}});
 </script>
